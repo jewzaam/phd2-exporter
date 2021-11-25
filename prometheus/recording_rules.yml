@@ -1,0 +1,29 @@
+groups:
+  - name: guiding
+    rules:
+    # TODO change from "exported_instance" to "inst"
+    # TODO remove "inst" when have swapped away from old log-exporter version (metric overlap)
+    - record: guiding:status:is_stopped
+      expr: phd2_status{status="Stopped",exported_instance!=""}
+    - record: guiding:status:is_calibrating
+      expr: phd2_status{status="Calibrating",exported_instance!=""}
+    - record: guiding:status:is_settling
+      expr: phd2_status{status="Settling",exported_instance!=""}
+    - record: guiding:status:is_guiding
+      expr: phd2_status{status="Guiding",exported_instance!=""}
+    - record: guiding:status:was_guiding
+      expr: max_over_time(phd2_status{status="Guiding",exported_instance!=""}[10m])
+    - record: guiding:status:is_connected
+      expr: clamp(rate(phd2_total{exported_instance!=""}[30s])>0,1,1)
+    - record: guiding:status:was_connected
+      expr: clamp(rate(phd2_total{exported_instance!=""}[10m])>0,1,1)
+    - record: guiding:rms:ra:arcsec
+      expr: phd2_rms{scale="arcsec",source="RADistanceRaw"}
+    - record: guiding:rms:dec:arcsec
+      expr: phd2_rms{scale="arcsec",source="DECDistanceRaw"}
+    - record: guiding:rms:total:arcsec
+      expr: phd2_rms{scale="arcsec",source="TotalDistanceRaw"}
+    - record: guiding:drift:ra
+      expr: phd2_GuideStep_RADistanceRaw * (rate(phd2_GuidingDithered_total[45s]) == bool 0) * on(instance) (phd2_status{status="Stopped"} == bool 0)
+    - record: guiding:drift:dec
+      expr: phd2_GuideStep_DECDistanceRaw * (rate(phd2_GuidingDithered_total[45s]) == bool 0) * on(instance) (phd2_status{status="Stopped"} == bool 0)
