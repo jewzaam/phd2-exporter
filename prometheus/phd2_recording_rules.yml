@@ -29,6 +29,6 @@ groups:
       expr: phd2_rms{scale="arcsec",source="TotalDistanceRaw"}
 
     - record: guiding:drift:ra
-      expr: phd2_GuideStep_RADistanceRaw * on(instance) clamp((phd2_status{status="Stopped"} == bool 0),1,1) * on() ((rate(phd2_GuidingDithered_total[45s]) == bool 0) OR on() absent(phd2_GuidingDithered_total))
+      expr: phd2_GuideStep_RADistanceRaw * on(instance) phd2_status{status="Guiding"} * on() ((rate(phd2_GuidingDithered_total[45s]) == bool 0) or on() absent(phd2_GuidingDithered_total))
     - record: guiding:drift:dec
-      expr: phd2_GuideStep_DECDistanceRaw * on(instance) (phd2_status{status="Stopped"} == bool 0) * on() ((rate(phd2_GuidingDithered_total[45s]) == bool 0) OR on() absent(phd2_GuidingDithered_total))
+      expr: phd2_GuideStep_DECDistanceRaw * on(instance) phd2_status{status="Guiding"} * on() ((rate(phd2_GuidingDithered_total[45s]) == bool 0) or on() absent(phd2_GuidingDithered_total))
