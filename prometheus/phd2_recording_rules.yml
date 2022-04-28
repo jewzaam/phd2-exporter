@@ -36,6 +36,6 @@ groups:
       expr: phd2_rms{scale="px",source="TotalDistanceRaw"}
 
     - record: guiding:drift:ra
-      expr: phd2_GuideStep_RADistanceRaw * on(instance) phd2_status{status="Guiding"} * on() ((rate(phd2_GuidingDithered_total[45s]) == bool 0) or on() absent(phd2_GuidingDithered_total))
+      expr: phd2_GuideStep_RADistanceRaw * on(instance,host) phd2_status{status="Guiding"} * on((instance,host) ((rate(phd2_GuidingDithered_total[45s]) == bool 0) or on() absent(phd2_GuidingDithered_total))
     - record: guiding:drift:dec
-      expr: phd2_GuideStep_DECDistanceRaw * on(instance) phd2_status{status="Guiding"} * on() ((rate(phd2_GuidingDithered_total[45s]) == bool 0) or on() absent(phd2_GuidingDithered_total))
+      expr: phd2_GuideStep_DECDistanceRaw * on(instance,host) phd2_status{status="Guiding"} * on((instance,host) ((rate(phd2_GuidingDithered_total[45s]) == bool 0) or on() absent(phd2_GuidingDithered_total))
