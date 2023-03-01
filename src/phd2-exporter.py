@@ -27,10 +27,26 @@ def debug(message):
     if DEBUG:
         print(message)
 
+def utility_set(name, value, labelDict):
+    # wrapper so I can debug things
+    try:
+        utility.set(name, value, labelDict)
+    except:
+        print(f"ERROR: utility.set({name}, {value}, {labelDict})")
+        raise
+
+def utility_inc(name, labelDict):
+    # wrapper so I can debug things
+    try:
+        utility.inc(name, labelDict)
+    except:
+        print(f"ERROR: utility.inc({name}, {labelDict})")
+        raise
+
 def callback_requestPixelScale(data):
     global GLOBAL_LABELS, PIXEL_SCALE
     PIXEL_SCALE = data["result"]
-    utility.set("phd2_pixel_scale", PIXEL_SCALE, GLOBAL_LABELS)
+    utility_set("phd2_pixel_scale", PIXEL_SCALE, GLOBAL_LABELS)
     if "id" in data:
         # unregister the callback, work is done
         JRPC_CALLBACKS.pop(data["id"])
@@ -53,6 +69,9 @@ def makeLabels(data, label_keys):
     for label_key in label_keys:
         if label_key in data:
             labels[label_key] = data[label_key]
+        else:
+            # default to 0 else future labels will be invalid (must have same labels always)
+            labels[label_key] = 0
     
     return labels
 
@@ -65,7 +84,7 @@ def createEventMetrics(data, labels, metric_keys):
                     value = 1
                 else:
                     value = 0
-            utility.set(f"phd2_{data['Event']}_{metric_key}", data[metric_key], labels)
+            utility_set(f"phd2_{data['Event']}_{metric_key}", data[metric_key], labels)
 
 def handleEvent(s, data):
     global PHD_STATE, PHD_RMS_SAMPLES, GLOBAL_LABELS, PHD_RMS_DATA, PHD_SETTLING
@@ -123,13 +142,13 @@ def handleEvent(s, data):
         value = int(PHD_STATE == state)
         l = copy.deepcopy(GLOBAL_LABELS)
         l.update({'status': state})
-        utility.set("phd2_status", value, l)
+        utility_set("phd2_status", value, l)
     
     # set settling status, which can be true while other states are true
     value = (PHD_SETTLING == True)
     l = copy.deepcopy(GLOBAL_LABELS)
     l.update({'status': "Settling"})
-    utility.set("phd2_status", value, l)
+    utility_set("phd2_status", value, l)
 
     # did equipment change? get pixel scale! uses callback so reading is handled in main loop
     if event in ["AppState", "ConfigurationChange"]:
@@ -205,17 +224,17 @@ def handleEvent(s, data):
                         rms_sum_of_squares += math.pow(value, 2)
                     # then divide and sqrt
                     rms_px = math.sqrt(rms_sum_of_squares / PHD_RMS_SAMPLES)
-                    utility.set("phd2_rms", rms_px, {"source": key, "scale": "px"})
+                    utility_set("phd2_rms", rms_px, {"source": key, "scale": "px"})
                 
                     # calculate for arcsec if we have pixel scale
                     if PIXEL_SCALE > 0:
                         rms_arcsec = rms_px * PIXEL_SCALE
-                        utility.set("phd2_rms", rms_arcsec, {"source": key, "scale": "arcsec"})
+                        utility_set("phd2_rms", rms_arcsec, {"source": key, "scale": "arcsec"})
 
     elif event == "GuidingDithered":
         createEventMetrics(data, GLOBAL_LABELS, ["dx", "dy"])
 
-    utility.inc(f"phd2_{event}", GLOBAL_LABELS)
+    utility_inc(f"phd2_{event}", GLOBAL_LABELS)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Export PHD2 events as prometheus metrics.")
@@ -263,16 +282,16 @@ if __name__ == '__main__':
                             break
                         # keep a count (inc / total) for everything
                         if GLOBAL_LABELS is not None:
-                            utility.inc("phd2", GLOBAL_LABELS)
+                            utility_inc("phd2", GLOBAL_LABELS)
                     except socket.timeout:
                         # this is fine, just nothing to read.  PHD2 idle.  No metric so it's not confused as an error
                         # keep a count (inc / total) for everything
                         if GLOBAL_LABELS is not None:
-                            utility.inc("phd2", GLOBAL_LABELS)
+                            utility_inc("phd2", GLOBAL_LABELS)
                         continue
                     except Exception as e:
                         # non-timeout error, this is bad.  break the loop, which will trigger reconnect
-                        utility.inc("phd2_error", {"type": type(e).__name__})
+                        utility_inc("phd2_error", {"type": type(e).__name__})
                         print(e)
                         break
                     lines = raw.decode()
@@ -285,7 +304,7 @@ if __name__ == '__main__':
                                 id = data["id"]
                                 JRPC_CALLBACKS[id](data)
         except socket.error as e:
-            utility.inc("phd2_error", {"type": type(e).__name__})
+            utility_inc("phd2_error", {"type": type(e).__name__})
             # 10061 is connection refused.  don't log these, it's spammy
             if e.errno == 10061:
                 if print_connect_error == True:
@@ -295,7 +314,7 @@ if __name__ == '__main__':
                 print(e)
             pass
         except Exception as e:
-            utility.inc("phd2_error", {"type": type(e).__name__})
+            utility_inc("phd2_error", {"type": type(e).__name__})
             print(e)
             pass
     
