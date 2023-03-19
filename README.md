@@ -18,3 +18,8 @@ Optional arguments are document in `--help`.
 ## Verify
 
 In your favorite browser look at the metrics endpoint.  If it's local, you can use http://localhost:8012
+
+# Metrics
+
+* `phd2_connected` - only true if all configured equipment is connected
+* `phd2_current_equipment` - device is 'camera', 'mount', etc and value indicates which device is connected (or not)

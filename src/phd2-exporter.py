@@ -5,6 +5,7 @@ import time
 import copy
 import math
 import random
+from threading import Thread, Lock
 
 import httpimport
 
@@ -17,6 +18,8 @@ PHD_RMS_SAMPLES = 15
 PHD_RMS_DATA = {}
 PIXEL_SCALE = 0
 JRPC_CALLBACKS = {}
+
+MUTEXT = Lock()
 
 GLOBAL_LABELS = None
 
@@ -43,6 +46,19 @@ def utility_inc(name, labelDict):
         print(f"ERROR: utility.inc({name}, {labelDict})")
         raise
 
+def randomJrcpRequestId():
+    request_id = -1
+    # only need mutext when claiming a request ID
+    MUTEXT.acquire()
+    while True:
+        request_id = random.randint(1,50000)
+        if request_id not in JRPC_CALLBACKS:
+            break
+    # claim the request id
+    JRPC_CALLBACKS[request_id] = request_id
+    MUTEXT.release()
+    return request_id
+
 def callback_requestPixelScale(data):
     global GLOBAL_LABELS, PIXEL_SCALE
     PIXEL_SCALE = data["result"]
@@ -55,14 +71,60 @@ def requestPixelScale(s):
     global JRPC_CALLBACKS
     # socket exception handling done in main loop
     # send request
-    request_id = random.randint(1,50000)
+    request_id = randomJrcpRequestId()
     request = {
         "method": "get_pixel_scale",
         "id": request_id,
     }
     JRPC_CALLBACKS[request_id] = callback_requestPixelScale
     s.sendall((json.dumps(request) + "\r\n").encode('utf-8'))
-            
+
+def callback_requestConnected(data):
+    global GLOBAL_LABELS
+    connected = data["result"]
+    utility_set("phd2_connected", connected, GLOBAL_LABELS)
+    if "id" in data:
+        # unregister the callback, work is done
+        JRPC_CALLBACKS.pop(data["id"])
+
+def requestConnected(s):
+    global JRPC_CALLBACKS
+    # socket exception handling done in main loop
+    # send request
+    request_id = randomJrcpRequestId()
+    request = {
+        "method": "get_connected",
+        "id": request_id,
+    }
+    JRPC_CALLBACKS[request_id] = callback_requestConnected
+    s.sendall((json.dumps(request) + "\r\n").encode('utf-8'))
+
+def callback_requestCurrentEquipment(data):
+    global GLOBAL_LABELS
+    equipment = data["result"]
+    # structure: key is the type of equipment. value is object. object has boolean property "connected" and string "name".
+    for key in equipment.keys():
+        eq = equipment[key]
+        connected = False
+        # NOTE do not collect 'name' as the value will change when device is connected and is not worth cardinality hit.
+        if "connected" in eq:
+            connected = eq["connected"]
+        l = copy.deepcopy(GLOBAL_LABELS)
+        l.update({'device': key})
+        utility_set("phd2_current_equipment", connected, l)
+
+def requestCurrentEquipment(s):
+    global JRPC_CALLBACKS
+    # socket exception handling done in main loop
+    # send request
+    request_id = randomJrcpRequestId()
+    request = {
+        "method": "get_current_equipment",
+        "id": request_id,
+    }
+    JRPC_CALLBACKS[request_id] = callback_requestCurrentEquipment
+    s.sendall((json.dumps(request) + "\r\n").encode('utf-8'))
+
 def makeLabels(data, label_keys):
     labels = {}
 
@@ -150,9 +212,20 @@ def handleEvent(s, data):
     l.update({'status': "Settling"})
     utility_set("phd2_status", value, l)
 
+    print("EVENT: " + event)
+
     # did equipment change? get pixel scale! uses callback so reading is handled in main loop
     if event in ["AppState", "ConfigurationChange"]:
+        # get updated pixel scale
         requestPixelScale(s)
+
+    # check for equipment connection changes at key events
+    # note, could stop guiding because equipment disconnects.  there is no event if equipment is disconnected :(
+    if event in ["AppState", "ConfigurationChange", "LoopingExposuresStopped"]:
+        # get updated connected state
+        requestConnected(s)
+        # get updated equipment list
+        requestCurrentEquipment(s)
 
     if event in ["LockPositionSet", "StarSelected"]:
         createEventMetrics(data, GLOBAL_LABELS, ["X", "Y"])
