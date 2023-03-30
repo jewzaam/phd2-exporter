@@ -7,10 +7,7 @@ import math
 import random
 from threading import Thread, Lock
 
-import httpimport
-
-with httpimport.github_repo('jewzaam', 'metrics-utility', 'utility', 'main'):
-    import utility
+import utility
 
 PHD_STATE = ""
 PHD_SETTLING = False
