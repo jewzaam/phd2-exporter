@@ -362,7 +362,7 @@ if __name__ == '__main__':
                     except Exception as e:
                         # non-timeout error, this is bad.  break the loop, which will trigger reconnect
                         utility_inc("phd2_error", {"type": type(e).__name__})
-                        print(e)
+                        print(f"Exception: {e}")
                         break
                     lines = raw.decode()
                     for line in lines.split('\r\n'):
@@ -381,11 +381,11 @@ if __name__ == '__main__':
                     print("Failed to connect to PHD2.  Server is down or unreachable.  Retrying silently...")
                     print_connect_error = False
             else:
-                print(e)
+                print(f"socket.error: {e}")
             pass
         except Exception as e:
             utility_inc("phd2_error", {"type": type(e).__name__})
-            print(e)
+            print(f"Exception: {e}")
             pass
     
         # something went wrong.  try again in a little bit...
