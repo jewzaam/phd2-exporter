@@ -209,7 +209,8 @@ def handleEvent(s, data):
     l.update({'status': "Settling"})
     utility_set("phd2_status", value, l)
 
-    print("EVENT: " + event)
+    # very chatty with GuideStep events
+    #print("EVENT: " + event)
 
     # did equipment change? get pixel scale! uses callback so reading is handled in main loop
     if event in ["AppState", "ConfigurationChange"]:
