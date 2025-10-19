@@ -7,7 +7,7 @@ import math
 import random
 from threading import Thread, Lock
 
-import utility
+import metrics_utility
 
 PHD_STATE = ""
 PHD_SETTLING = False
@@ -30,17 +30,17 @@ def debug(message):
 def utility_set(name, value, labelDict):
     # wrapper so I can debug things
     try:
-        utility.set(name, value, labelDict)
+        metrics_utility.set(name, value, labelDict)
     except:
-        print(f"ERROR: utility.set({name}, {value}, {labelDict})")
+        print(f"ERROR: metrics_utility.set({name}, {value}, {labelDict})")
         raise
 
 def utility_inc(name, labelDict):
     # wrapper so I can debug things
     try:
-        utility.inc(name, labelDict)
+        metrics_utility.inc(name, labelDict)
     except:
-        print(f"ERROR: utility.inc({name}, {labelDict})")
+        print(f"ERROR: metrics_utility.inc({name}, {labelDict})")
         raise
 
 def randomJrcpRequestId():
@@ -333,7 +333,7 @@ if __name__ == '__main__':
     PHD_RMS_SAMPLES = rms_samples
 
     # Start up the server to expose the metrics.
-    utility.metrics(port)
+    metrics_utility.metrics(port)
 
     print_connect_error = True
 
