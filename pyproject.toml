@@ -1,0 +1,82 @@
+# Generated-by: Cursor (Claude Sonnet 4.5)
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "phd2-exporter"
+version = "0.1.0"
+description = "Prometheus exporter for PHD2 guiding metrics"
+authors = [
+    {name = "jewzaam", email = "noreply@github.com"}
+]
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "metrics-utility @ git+https://github.com/jewzaam/metrics-utility.git@v0.1.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "mypy>=1.0.0",
+    "ruff>=0.1.0",
+]
+
+[project.scripts]
+phd2-exporter = "phd2_exporter.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+strict_equality = true
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "A", "C4", "ISC", "ICN", "G", "INP", "PIE", "PT", "Q", "RSE", "RET", "SIM", "ARG", "PTH", "ERA", "PGH", "PL", "RUF"]
+ignore = [
+    "E501",     # Line too long (handled by formatter)
+    "PLR0913",  # Too many arguments
+    "PLR0912",  # Too many branches
+    "PLR0915",  # Too many statements
+    "PLW0603",  # Global statement usage (needed for state management)
+    "ERA001",   # Found commented-out code
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = [
+    "PLR2004",  # Magic values in tests are acceptable
+    "B017",     # pytest.raises(Exception) is acceptable for error testing
+    "PT011",    # pytest.raises without match is acceptable
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+addopts = "-v --tb=short --cov=src --cov-report=html --cov-report=term"
+
