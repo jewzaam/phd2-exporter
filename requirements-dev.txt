@@ -1,0 +1,11 @@
+# Generated-by: Cursor (Claude Sonnet 4.5)
+# Development dependencies for phd2-exporter
+# This file serves as a backup for pip-based installations
+# The preferred method is using pyproject.toml with: pip install -e ".[dev]"
+
+pytest>=7.0.0
+pytest-cov>=4.0.0
+mypy>=1.0.0
+ruff>=0.1.0
+
+
